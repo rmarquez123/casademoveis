@@ -1,0 +1,12 @@
+used_furniture\restapi\UserTrackingServlet.class
+used_furniture\core\PhotoDTO.class
+used_furniture\core\Photo.class
+used_furniture\restapi\ProductServlet.class
+used_furniture\core\ProductsStore.class
+used_furniture\restapi\SecurityConfig.class
+used_furniture\core\Product.class
+used_furniture\restapi\UsedFurnitureConfiguration.class
+used_furniture\restapi\users\UsersService.class
+used_furniture\restapi\JacksonConfig.class
+used_furniture\core\Category.class
+used_furniture\core\ProductsSource.class
