@@ -19,12 +19,12 @@
 ">
   
   <context:component-scan base-package="used_furniture"/>      
-  <util:properties id="appProps" location="classpath:../application.properties"/> 
-  <context:property-placeholder
-        location="classpath:../ai-product-description.properties"
-        ignore-unresolvable="true"/>
   <mvc:annotation-driven/>         
   
+  <util:properties id="appProps" 
+                   location="classpath:../application.properties"/> 
+  <context:property-placeholder
+        location="classpath:../ai-product-description.properties"/>
   <bean id="multipartResolver"
           class="org.springframework.web.multipart.support.StandardServletMultipartResolver" />
 
