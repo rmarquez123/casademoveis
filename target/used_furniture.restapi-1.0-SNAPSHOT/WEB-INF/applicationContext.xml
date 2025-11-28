@@ -23,7 +23,7 @@
   
   <util:properties id="appProps" 
                    location="classpath:../application.properties"/> 
-  <context:property-placeholder
+  <util:properties id="aiProps" 
         location="classpath:../ai-product-description.properties"/>
   <bean id="multipartResolver"
           class="org.springframework.web.multipart.support.StandardServletMultipartResolver" />
