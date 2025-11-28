@@ -21,7 +21,7 @@ public class PromptBuilder {
 
     return new OpenAiProductDescriptionPayload(systemPrompt, userPrompt, imageBytes);
   }
-
+  
   /*
      * System prompt describes the role and constraints of the model.
    */
@@ -31,7 +31,7 @@ public class PromptBuilder {
     sb.append("descrições de anúncios de móveis usados para o mercado brasileiro.\n");
     sb.append("Regras importantes:\n");
     sb.append("- Escreva sempre em português do Brasil.\n");
-    sb.append("- Use linguagem clara, amigável e objetiva.\n");
+    sb.append("- Use linguagem clara, amigável, positivo e persuasivo.\n");
     sb.append("Na descrição, inclua informações sobre, se aplicável, o tipo e a cor do material, algumas características marcantes, por que esta seria uma peça interessante para se ter e alguns comentários sobre o estado da peça."); 
     sb.append("- Nunca invente informações que não estejam visíveis nas imagens ou ");
     sb.append("nos dados fornecidos (marca, medidas exatas, defeitos invisíveis, etc.).\n");
