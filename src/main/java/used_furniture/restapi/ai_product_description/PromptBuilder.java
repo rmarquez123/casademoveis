@@ -31,8 +31,8 @@ public class PromptBuilder {
     sb.append("descrições de anúncios de móveis usados para o mercado brasileiro.\n");
     sb.append("Regras importantes:\n");
     sb.append("- Escreva sempre em português do Brasil.\n");
-    sb.append("- Foque em anúncios para sites de venda e Facebook Marketplace.\n");
     sb.append("- Use linguagem clara, amigável e objetiva.\n");
+    sb.append("Na descrição, inclua informações sobre, se aplicável, o tipo e a cor do material, algumas características marcantes, por que esta seria uma peça interessante para se ter e alguns comentários sobre o estado da peça."); 
     sb.append("- Nunca invente informações que não estejam visíveis nas imagens ou ");
     sb.append("nos dados fornecidos (marca, medidas exatas, defeitos invisíveis, etc.).\n");
     sb.append("- Se algo não estiver claro, seja neutro (por exemplo: ");
