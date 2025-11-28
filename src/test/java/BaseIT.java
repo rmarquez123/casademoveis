@@ -15,8 +15,8 @@ public class BaseIT {
    * @return
    */
   protected DbConnection getDbConnection() {
-    String url = "localhost";
-    int port = 5433;
+    String url = "casademoveisusados.com";
+    int port = 5432;
     String databaseName = "casademoveis";
     String user = "postgres";
     String password = "postgres";
