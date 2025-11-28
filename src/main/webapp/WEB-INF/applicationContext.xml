@@ -24,5 +24,9 @@
         location="classpath:../ai-product-description.properties"
         ignore-unresolvable="true"/>
   <mvc:annotation-driven/>         
+  
+  <bean id="multipartResolver"
+          class="org.springframework.web.multipart.support.StandardServletMultipartResolver" />
+
 </beans>
   
