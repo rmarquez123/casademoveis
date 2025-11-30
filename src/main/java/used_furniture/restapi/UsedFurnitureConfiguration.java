@@ -11,12 +11,14 @@ import java.util.function.Consumer;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestTemplate;
 import used_furniture.core.posts.model.SocialPlatform;
 import used_furniture.core.posts.repository.PostPhotoRepository;
 import used_furniture.core.posts.repository.PostPublicationRepository;
 import used_furniture.core.posts.repository.PostRepository;
 import used_furniture.core.products.repository.PhotoRepository;
 import used_furniture.core.products.repository.ProductRepository;
+import used_furniture.restapi.posts.client.FacebookPublisher;
 import used_furniture.restapi.posts.client.FakeSocialPublisher;
 import used_furniture.restapi.posts.client.SocialPublisher;
 import used_furniture.restapi.posts.service.CaptionBuilderService;
@@ -41,7 +43,8 @@ public class UsedFurnitureConfiguration {
     String password = appProps.getProperty("used-furniture.db.password");
     Consumer<HikariConfig> configHelper = p -> {
     };
-    ConnectionPool connPool = new HikariConnectionPool(url, port, databaseName, user, password, configHelper);
+    ConnectionPool connPool = new HikariConnectionPool( //
+            url, port, databaseName, user, password, configHelper);
     return new DbConnection(connPool);
   }
 
@@ -60,13 +63,48 @@ public class UsedFurnitureConfiguration {
   public CaptionBuilderService captionBuilderService() {
     return new CaptionBuilderService();
   }
+  
+  /**
+   * 
+   * @return 
+   */
+  @Bean
+  public RestTemplate restTemplate() {
+    return new RestTemplate();
+  }
+  
+  /**
+   * 
+   * @param restTemplate
+   * @param appProps
+   * @return 
+   */
+  @Bean
+  public SocialPublisher facebookPublisher(RestTemplate restTemplate,
+                                           @Qualifier("appProps") Properties appProps) {
+
+    String baseUrl = appProps.getProperty("facebook.graph.api.baseUrl", "https://graph.facebook.com/v21.0");
+    String pageId = appProps.getProperty("facebook.page.id");
+    String accessToken = appProps.getProperty("facebook.access.token");
+    String imageBaseUrl = appProps.getProperty("facebook.image.baseUrl");
+    
+    return new FacebookPublisher(restTemplate, baseUrl, pageId, accessToken, imageBaseUrl);
+  }
 
   @Bean
-  public Map<SocialPlatform, SocialPublisher> publisherByPlatform() {
+  public SocialPublisher instagramFakePublisher() {
+    // Still using fake for Instagram for now
+    return new FakeSocialPublisher(SocialPlatform.INSTAGRAM);
+  }
+
+  @Bean
+  public Map<SocialPlatform, SocialPublisher> publisherByPlatform(
+      SocialPublisher facebookPublisher,
+      SocialPublisher instagramFakePublisher) {
+
     Map<SocialPlatform, SocialPublisher> map = new EnumMap<>(SocialPlatform.class);
-    // For now, use fake publishers for both platforms
-    map.put(SocialPlatform.INSTAGRAM, new FakeSocialPublisher(SocialPlatform.INSTAGRAM));
-    map.put(SocialPlatform.FACEBOOK, new FakeSocialPublisher(SocialPlatform.FACEBOOK));
+    map.put(SocialPlatform.FACEBOOK, facebookPublisher);
+    map.put(SocialPlatform.INSTAGRAM, instagramFakePublisher);
     return map;
   }
 
@@ -90,4 +128,5 @@ public class UsedFurnitureConfiguration {
         publisherByPlatform
     );
   }
+
 }

@@ -1,6 +1,7 @@
 package used_furniture.core.products.repository;
 
 import java.util.List;
+import java.util.Optional;
 import used_furniture.core.products.model.Photo;
 
 /*
@@ -12,4 +13,7 @@ public interface PhotoRepository {
    * Load all photos for a given product.
    */
   List<Photo> findByProductId(int productId);
+
+  Optional<Photo> findById(long photoId);
+
 }

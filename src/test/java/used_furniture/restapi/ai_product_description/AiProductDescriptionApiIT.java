@@ -80,20 +80,6 @@ public class AiProductDescriptionApiIT {
     )
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-            // We can't assert exact text because LLM output varies.
-            // Instead, check that required fields are present and non-empty.
-//            .andExpect(jsonPath("$.titlePt").isNotEmpty())
-            
-            // tags may be empty but usually we expect at least one
-//            .andExpect(jsonPath("$.tags").isArray())
-//            // category/condition/roomType may be null if confidence < medium.
-//            // Just assert the fields exist (possibly null).
-//            .andExpect(jsonPath("$.category").exists())
-//            .andExpect(jsonPath("$.condition").exists())
-//            .andExpect(jsonPath("$.roomType").exists())
-//            // confidenceNotes should exist (can be empty, but usually not)
-//            .andExpect(jsonPath("$.confidenceNotes").exists())
-            
             .andReturn();
     Object a = result.getResponse().getContentAsString();
     System.out.println(a);

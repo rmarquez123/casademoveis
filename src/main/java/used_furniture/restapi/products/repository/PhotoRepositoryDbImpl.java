@@ -10,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /*
  * JDBC-based implementation of PhotoRepository using DbConnection.
@@ -56,4 +57,36 @@ public class PhotoRepositoryDbImpl implements PhotoRepository {
       throw new RuntimeException("Error loading Photos for productId=" + productId, e);
     }
   }
+
+  @Override
+  public Optional<Photo> findById(long photoId) {
+
+    String sql = """
+      SELECT photo_id,
+             product_id,
+             photo
+        FROM products.photo
+       WHERE photo_id = ?
+      """;
+
+    try (Connection conn = dbconn.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+
+      ps.setLong(1, photoId);
+
+      try (ResultSet rs = ps.executeQuery()) {
+        if (rs.next()) {
+          long pid = rs.getLong("photo_id");
+          long prodId = rs.getLong("product_id");
+          byte[] bytes = rs.getBytes("photo");
+          return Optional.of(new Photo(pid, prodId, bytes));
+        }
+      }
+
+      return Optional.empty();
+
+    } catch (SQLException e) {
+      throw new RuntimeException("Error loading Photo by id=" + photoId, e);
+    }
+  }
+
 }
