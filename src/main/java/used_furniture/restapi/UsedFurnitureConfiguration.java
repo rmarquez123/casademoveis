@@ -21,7 +21,11 @@ import used_furniture.core.products.repository.ProductRepository;
 import used_furniture.restapi.posts.client.FacebookPublisher;
 import used_furniture.restapi.posts.client.FakeSocialPublisher;
 import used_furniture.restapi.posts.client.SocialPublisher;
+import used_furniture.restapi.posts.repository.PostPhotoRepositoryDbImpl;
+import used_furniture.restapi.posts.repository.PostPublicationRepositoryDbImpl;
+import used_furniture.restapi.posts.repository.PostRepositoryDbImpl;
 import used_furniture.restapi.posts.service.CaptionBuilderService;
+import used_furniture.restapi.posts.service.PostCreationService;
 import used_furniture.restapi.posts.service.PostPublicationService;
 import used_furniture.restapi.products.repository.PhotoRepositoryDbImpl;
 import used_furniture.restapi.products.repository.ProductRepositoryDbImpl;
@@ -57,37 +61,61 @@ public class UsedFurnitureConfiguration {
   public PhotoRepository photoRepository(@Qualifier("used_furniture.conn") DbConnection dbconn) {
     return new PhotoRepositoryDbImpl(dbconn);
   }
-  
-  
+
+  @Bean
+  public PostRepository postRepository(@Qualifier("used_furniture.conn") DbConnection dbconn) {
+    return new PostRepositoryDbImpl(dbconn);
+  }
+
+  @Bean
+  public PostPhotoRepository PostPhotoRepository(@Qualifier("used_furniture.conn") DbConnection dbconn) {
+    return new PostPhotoRepositoryDbImpl(dbconn);
+  }
+
+  @Bean
+  public PostPublicationRepository postPublicationRepository(@Qualifier("used_furniture.conn") DbConnection dbconn) {
+    return new PostPublicationRepositoryDbImpl(dbconn);
+  }
+
+  @Bean
+  public PostCreationService postCreationService(
+          PostRepository postRepo,
+          PostPhotoRepository postPhotoRepo,
+          ProductRepository productRepo,
+          PhotoRepository photoRepo
+  ) {
+    return new PostCreationService(postRepo, postPhotoRepo, productRepo, photoRepo);
+  }
+
   @Bean
   public CaptionBuilderService captionBuilderService() {
     return new CaptionBuilderService();
   }
-  
+
   /**
-   * 
-   * @return 
+   *
+   * @return
    */
   @Bean
   public RestTemplate restTemplate() {
     return new RestTemplate();
   }
-  
+
   /**
-   * 
+   *
    * @param restTemplate
    * @param appProps
-   * @return 
+   * @return
    */
   @Bean
   public SocialPublisher facebookPublisher(RestTemplate restTemplate,
-                                           @Qualifier("appProps") Properties appProps) {
+          @Qualifier("appProps") Properties appProps) {
 
     String baseUrl = appProps.getProperty("facebook.graph.api.baseUrl", "https://graph.facebook.com/v21.0");
     String pageId = appProps.getProperty("facebook.page.id");
     String accessToken = appProps.getProperty("facebook.access.token");
     String imageBaseUrl = appProps.getProperty("facebook.image.baseUrl");
-    
+
     return new FacebookPublisher(restTemplate, baseUrl, pageId, accessToken, imageBaseUrl);
   }
 
@@ -99,8 +127,8 @@ public class UsedFurnitureConfiguration {
 
   @Bean
   public Map<SocialPlatform, SocialPublisher> publisherByPlatform(
-      SocialPublisher facebookPublisher,
-      SocialPublisher instagramFakePublisher) {
+          SocialPublisher facebookPublisher,
+          SocialPublisher instagramFakePublisher) {
 
     Map<SocialPlatform, SocialPublisher> map = new EnumMap<>(SocialPlatform.class);
     map.put(SocialPlatform.FACEBOOK, facebookPublisher);
@@ -110,22 +138,22 @@ public class UsedFurnitureConfiguration {
 
   @Bean
   public PostPublicationService postPublicationService(
-      PostPublicationRepository publicationRepo,
-      PostRepository postRepo,
-      PostPhotoRepository postPhotoRepo,
-      ProductRepository productRepo,
-      PhotoRepository photoRepo,
-      CaptionBuilderService captionBuilderService,
-      Map<SocialPlatform, SocialPublisher> publisherByPlatform) {
+          PostPublicationRepository publicationRepo,
+          PostRepository postRepo,
+          PostPhotoRepository postPhotoRepo,
+          ProductRepository productRepo,
+          PhotoRepository photoRepo,
+          CaptionBuilderService captionBuilderService,
+          Map<SocialPlatform, SocialPublisher> publisherByPlatform) {
 
     return new PostPublicationService(
-        publicationRepo,
-        postRepo,
-        postPhotoRepo,
-        productRepo,
-        photoRepo,
-        captionBuilderService,
-        publisherByPlatform
+            publicationRepo,
+            postRepo,
+            postPhotoRepo,
+            productRepo,
+            photoRepo,
+            captionBuilderService,
+            publisherByPlatform
     );
   }
 
