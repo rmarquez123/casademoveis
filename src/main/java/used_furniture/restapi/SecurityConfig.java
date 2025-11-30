@@ -25,23 +25,23 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .authorizeRequests()
             .anyRequest().permitAll(); // Allow all requests for now
   }
-  
+
 //  @Override
 //  protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 //    // In-memory authentication example (you can replace this with your own auth logic)
 //    auth.inMemoryAuthentication()
 //            .withUser("user").password("{noop}password").roles("USER");
 //  }
-
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     CorsConfiguration config = new CorsConfiguration();
-    config.setAllowedOrigins(Arrays.asList(
-            "http://localhost:4200",
-            "https://admin.casademoveisusados.com",
-            "https://casademoveisusados.com"
-    ));
+//    config.setAllowedOrigins(Arrays.asList(
+//            "http://localhost:4200",
+//            "https://admin.casademoveisusados.com",
+//            "https://casademoveisusados.com"
+//    ));
+    config.setAllowedOrigins(Arrays.asList("*"));
     config.addAllowedHeader("*");
     config.addAllowedMethod("*");
     config.setAllowCredentials(true);

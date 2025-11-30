@@ -7,6 +7,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import used_furniture.core.products.model.Photo;
@@ -18,7 +19,7 @@ import used_furniture.core.products.repository.PhotoRepository;
  *
  * This is used both by your frontend and by Facebook (imageBaseUrl).
  */
-@RestController
+@Controller
 @RequestMapping("/product/photo")
 public class ProductPhotoController {
 
