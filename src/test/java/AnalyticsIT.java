@@ -14,7 +14,7 @@ import used_furniture.restapi.users.UsersService;
  * @author rmarq
  */
 public class AnalyticsIT extends BaseIT{
-  
+    
   /**
    * 
    */

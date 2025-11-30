@@ -17,9 +17,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import used_furniture.core.Category;
-import used_furniture.core.Photo;
+import used_furniture.core.products.model.Photo;
 import used_furniture.core.PhotoDTO;
-import used_furniture.core.Product;
+import used_furniture.core.products.model.Product;
 import used_furniture.core.ProductsSource;
 import used_furniture.core.ProductsStore;
 

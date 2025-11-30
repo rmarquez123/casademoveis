@@ -1,4 +1,4 @@
-package used_furniture.core;
+package used_furniture.core.products.model;
 
 /**
  *
@@ -22,4 +22,18 @@ public class Photo {
     this.bytes = bytes;
     
   }
+
+  public long getPhotoId() {
+    return photoId;
+  }
+
+  public long getProductId() {
+    return productId;
+  }
+
+  public byte[] getBytes() {
+    return bytes;
+  }
+  
+  
 }

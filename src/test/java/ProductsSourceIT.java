@@ -3,7 +3,7 @@ import common.db.DbConnection;
 import java.time.ZonedDateTime;
 import java.util.List;
 import org.junit.Test;
-import used_furniture.core.Product;
+import used_furniture.core.products.model.Product;
 import used_furniture.core.ProductsSource;
 import used_furniture.core.ProductsStore;
 

@@ -1,4 +1,4 @@
-package used_furniture.core;
+package used_furniture.core.products.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.UnsupportedEncodingException;
@@ -126,6 +126,54 @@ public class Product {
    */
   public Product setProductId(int newProductId) {
     return new Product(newProductId, name, description, available, dateReceived, dateSold, category, categoryName, length, depth, height, price);
+  }
+
+  public int getProductId() {
+    return product_id;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public boolean isAvailable() {
+    return available;
+  }
+
+  public ZonedDateTime getDateReceived() {
+    return dateReceived;
+  }
+
+  public ZonedDateTime getDateSold() {
+    return dateSold;
+  }
+
+  public int getCategory() {
+    return category;
+  }
+
+  public String getCategoryName() {
+    return categoryName;
+  }
+
+  public double getLength() {
+    return length;
+  }
+
+  public double getDepth() {
+    return depth;
+  }
+
+  public double getHeight() {
+    return height;
+  }
+
+  public double getPrice() {
+    return price;
   }
 
 }

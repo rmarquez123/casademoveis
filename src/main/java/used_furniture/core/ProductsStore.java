@@ -1,5 +1,7 @@
 package used_furniture.core;
 
+import used_furniture.core.products.model.Photo;
+import used_furniture.core.products.model.Product;
 import common.RmObjects;
 import common.db.DbConnection;
 import java.sql.SQLException;

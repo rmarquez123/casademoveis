@@ -4,11 +4,25 @@ import com.zaxxer.hikari.HikariConfig;
 import common.db.ConnectionPool;
 import common.db.DbConnection;
 import common.db.HikariConnectionPool;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.function.Consumer;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import used_furniture.core.posts.model.SocialPlatform;
+import used_furniture.core.posts.repository.PostPhotoRepository;
+import used_furniture.core.posts.repository.PostPublicationRepository;
+import used_furniture.core.posts.repository.PostRepository;
+import used_furniture.core.products.repository.PhotoRepository;
+import used_furniture.core.products.repository.ProductRepository;
+import used_furniture.restapi.posts.client.FakeSocialPublisher;
+import used_furniture.restapi.posts.client.SocialPublisher;
+import used_furniture.restapi.posts.service.CaptionBuilderService;
+import used_furniture.restapi.posts.service.PostPublicationService;
+import used_furniture.restapi.products.repository.PhotoRepositoryDbImpl;
+import used_furniture.restapi.products.repository.ProductRepositoryDbImpl;
 
 /**
  *
@@ -16,7 +30,7 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class UsedFurnitureConfiguration {
-  
+
   @Bean("used_furniture.conn")
   public DbConnection dbconn(@Qualifier("appProps") Properties appProps) {
 
@@ -24,10 +38,56 @@ public class UsedFurnitureConfiguration {
     int port = Integer.parseInt(appProps.getProperty("used-furniture.db.port"));
     String databaseName = appProps.getProperty("used-furniture.db.name");
     String user = appProps.getProperty("used-furniture.db.user");
-    String password = appProps.getProperty("used-furniture.db.password"); 
+    String password = appProps.getProperty("used-furniture.db.password");
     Consumer<HikariConfig> configHelper = p -> {
     };
     ConnectionPool connPool = new HikariConnectionPool(url, port, databaseName, user, password, configHelper);
     return new DbConnection(connPool);
+  }
+
+  @Bean
+  public ProductRepository productRepository(@Qualifier("used_furniture.conn") DbConnection dbconn) {
+    return new ProductRepositoryDbImpl(dbconn);
+  }
+
+  @Bean
+  public PhotoRepository photoRepository(@Qualifier("used_furniture.conn") DbConnection dbconn) {
+    return new PhotoRepositoryDbImpl(dbconn);
+  }
+  
+  
+  @Bean
+  public CaptionBuilderService captionBuilderService() {
+    return new CaptionBuilderService();
+  }
+
+  @Bean
+  public Map<SocialPlatform, SocialPublisher> publisherByPlatform() {
+    Map<SocialPlatform, SocialPublisher> map = new EnumMap<>(SocialPlatform.class);
+    // For now, use fake publishers for both platforms
+    map.put(SocialPlatform.INSTAGRAM, new FakeSocialPublisher(SocialPlatform.INSTAGRAM));
+    map.put(SocialPlatform.FACEBOOK, new FakeSocialPublisher(SocialPlatform.FACEBOOK));
+    return map;
+  }
+
+  @Bean
+  public PostPublicationService postPublicationService(
+      PostPublicationRepository publicationRepo,
+      PostRepository postRepo,
+      PostPhotoRepository postPhotoRepo,
+      ProductRepository productRepo,
+      PhotoRepository photoRepo,
+      CaptionBuilderService captionBuilderService,
+      Map<SocialPlatform, SocialPublisher> publisherByPlatform) {
+
+    return new PostPublicationService(
+        publicationRepo,
+        postRepo,
+        postPhotoRepo,
+        productRepo,
+        photoRepo,
+        captionBuilderService,
+        publisherByPlatform
+    );
   }
 }
