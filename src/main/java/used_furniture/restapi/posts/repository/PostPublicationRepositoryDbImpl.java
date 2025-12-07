@@ -25,15 +25,12 @@ public class PostPublicationRepositoryDbImpl implements PostPublicationRepositor
   public PostPublicationRepositoryDbImpl(DbConnection dbconn) {
     this.dbconn = dbconn;
   }
-  
-  
-  
+
   @Override
   public Optional<PostPublication> findById(long postPublicationId) {
     String sql = baseSelectSql() + " WHERE post_publication_id = ?";
 
-    try (Connection conn = this.dbconn.getConnection();
-         PreparedStatement ps = conn.prepareStatement(sql)) {
+    try (Connection conn = this.dbconn.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
       ps.setLong(1, postPublicationId);
 
@@ -53,8 +50,7 @@ public class PostPublicationRepositoryDbImpl implements PostPublicationRepositor
   public Optional<PostPublication> findByPostAndPlatform(long postId, SocialPlatform platform) {
     String sql = baseSelectSql() + " WHERE post_id = ? AND platform = ?";
 
-    try (Connection conn = this.dbconn.getConnection();
-         PreparedStatement ps = conn.prepareStatement(sql)) {
+    try (Connection conn = this.dbconn.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
       ps.setLong(1, postId);
       ps.setString(2, platform.name());
@@ -68,7 +64,7 @@ public class PostPublicationRepositoryDbImpl implements PostPublicationRepositor
 
     } catch (SQLException e) {
       throw new RuntimeException(
-          "Error loading PostPublication for postId=" + postId + " and platform=" + platform, e);
+              "Error loading PostPublication for postId=" + postId + " and platform=" + platform, e);
     }
   }
 
@@ -92,8 +88,7 @@ public class PostPublicationRepositoryDbImpl implements PostPublicationRepositor
         RETURNING post_publication_id
         """;
 
-    try (Connection conn = this.dbconn.getConnection();
-         PreparedStatement ps = conn.prepareStatement(sql)) {
+    try (Connection conn = this.dbconn.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
       ps.setLong(1, publication.getPostId());
       ps.setString(2, publication.getPlatform().name());
@@ -144,8 +139,7 @@ public class PostPublicationRepositoryDbImpl implements PostPublicationRepositor
          WHERE post_publication_id = ?
         """;
 
-    try (Connection conn = this.dbconn.getConnection();
-         PreparedStatement ps = conn.prepareStatement(sql)) {
+    try (Connection conn = this.dbconn.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
       ps.setLong(1, publication.getPostId());
       ps.setString(2, publication.getPlatform().name());
@@ -178,8 +172,7 @@ public class PostPublicationRepositoryDbImpl implements PostPublicationRepositor
 
     List<PostPublication> result = new ArrayList<>();
 
-    try (Connection conn = this.dbconn.getConnection();
-         PreparedStatement ps = conn.prepareStatement(sql)) {
+    try (Connection conn = this.dbconn.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
       ps.setObject(1, now);
       ps.setInt(2, limit);
@@ -206,8 +199,7 @@ public class PostPublicationRepositoryDbImpl implements PostPublicationRepositor
 
     List<PostPublication> result = new ArrayList<>();
 
-    try (Connection conn = this.dbconn.getConnection();
-         PreparedStatement ps = conn.prepareStatement(sql)) {
+    try (Connection conn = this.dbconn.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
       ps.setString(1, status.name());
       ps.setInt(2, limit);
@@ -265,4 +257,41 @@ public class PostPublicationRepositoryDbImpl implements PostPublicationRepositor
 
     return p;
   }
+
+  @Override
+  public List<PostPublication> findByPost(long postId) {
+    String sql = """
+      SELECT post_publication_id,
+             post_id,
+             platform,
+             target_account,
+             caption_override,
+             status,
+             scheduled_time,
+             published_at,
+             platform_post_id,
+             error_message,
+             last_attempt_at,
+             attempt_count
+        FROM posts.post_publication
+       WHERE post_id = ?
+      """;
+    List<PostPublication> result = new ArrayList<>();
+
+    try (Connection conn = this.dbconn.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+
+      ps.setLong(1, postId);
+      
+      try (ResultSet rs = ps.executeQuery()) {
+        while (rs.next()) {
+          result.add(mapRowToPostPublication(rs));
+        }
+      }
+      return result;
+
+    } catch (SQLException e) {
+      throw new RuntimeException("Error finding PostPublications by postId=" + postId, e);
+    }
+  }
+
 }

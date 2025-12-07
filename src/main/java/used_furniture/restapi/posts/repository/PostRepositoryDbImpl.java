@@ -8,7 +8,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -184,8 +186,51 @@ public class PostRepositoryDbImpl implements PostRepository {
     p.setNotes(rs.getString("notes"));
     return p;
   }
-  
-  
+
+  @Override
+  public Optional<Post> findActiveByProductId(int productId) {
+    String sql = """
+        SELECT post_id,
+               product_id,
+               title,
+               caption,
+               language_code,
+               created_at,
+               desired_publish_time,
+               is_active,
+               notes
+          FROM posts.post
+         WHERE product_id = ?
+           AND is_active = TRUE
+         ORDER BY created_at DESC
+         LIMIT 1
+        """;
+
+    try (Connection conn = dbconn.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+
+      ps.setInt(1, productId);
+      try (ResultSet rs = ps.executeQuery()) {
+        if (rs.next()) {
+          return Optional.of(mapRowToPost(rs));
+        }
+        return Optional.empty();
+      }
+
+    } catch (SQLException e) {
+      throw new RuntimeException("Error finding active Post for productId=" + productId, e);
+    }
+  }
+
+  @Override
+  public void deactivate(long postId) {
+    String sql = "UPDATE posts.post SET is_active = FALSE WHERE post_id = ?";
+
+    try (Connection conn = dbconn.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+      ps.setLong(1, postId);
+      ps.executeUpdate();
+    } catch (SQLException e) {
+      throw new RuntimeException("Error deactivating Post id=" + postId, e);
+    }
+  }
 
 }
-

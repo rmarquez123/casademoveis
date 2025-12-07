@@ -1,23 +1,24 @@
 package used_furniture.restapi.posts.client;
 
-import java.net.URI;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import used_furniture.core.posts.model.Post;
 import used_furniture.core.posts.model.PostPhoto;
 import used_furniture.core.posts.model.SocialPlatform;
 import used_furniture.core.products.model.Photo;
 import used_furniture.core.products.model.Product;
+
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-
 
 /*
  * Real Facebook publisher using the Graph API.
@@ -64,13 +65,21 @@ public class FacebookPublisher implements SocialPublisher {
           String caption) {
 
     try {
-      Optional<String> imageUrlOpt = resolveImageUrl(postPhotos, productPhotos);
+      // Collect up to 10 image URLs based on PostPhoto + productPhotos
+      List<String> imageUrls = resolveImageUrls(postPhotos, productPhotos, 10);
 
-      if (imageUrlOpt.isPresent()) {
-        return publishPhotoPost(caption, imageUrlOpt.get());
-      } else {
-        LOG.info("No photo found for postId={}, publishing text-only feed post", post.getPostId());
+      if (imageUrls.isEmpty()) {
+        LOG.info("No photos found for postId={}, publishing text-only feed post", post.getPostId());
         return publishFeedPost(caption);
+      }
+
+      if (imageUrls.size() == 1) {
+        String imageUrl = imageUrls.get(0);
+        return publishPhotoPost(caption, imageUrl);
+      } else {
+        LOG.info("Publishing multi-photo Facebook post: postId={} photoCount={}",
+                post.getPostId(), imageUrls.size());
+        return publishMultiPhotoPost(caption, imageUrls);
       }
 
     } catch (RestClientException ex) {
@@ -84,42 +93,72 @@ public class FacebookPublisher implements SocialPublisher {
     }
   }
 
+
   /*
-   * Try to find an image URL from the linked PostPhoto + Product Photo.
-   * We assume imageBaseUrl + photoId forms a publicly accessible URL.
-   *
-   * e.g. imageBaseUrl = "https://restapi.casademoveisusados.com/product/photo/"
-   *      photoId = 42
-   *      => https://restapi.casademoveisusados.com/product/photo/42
+ * Build a list of image URLs for this post, based on PostPhoto rows.
+ * - Primary photos first, then by sort_order, then by photoId.
+ * - Uses imageBaseUrl + "/" + photoId.
    */
-  private Optional<String> resolveImageUrl(List<PostPhoto> postPhotos, List<Photo> productPhotos) {
+  private List<String> resolveImageUrls(List<PostPhoto> postPhotos,
+          List<Photo> productPhotos,
+          int maxImages) {
 
+    List<String> urls = new ArrayList<>();
     if (postPhotos == null || postPhotos.isEmpty()) {
-      return Optional.empty();
+      return urls;
     }
 
-    // Prefer primary, else first
-    PostPhoto chosen = postPhotos.stream()
-            .filter(PostPhoto::isPrimary)
-            .findFirst()
-            .orElse(postPhotos.get(0));
+    // Sort: primary first, then by sort_order, then photoId
+    List<PostPhoto> sorted = new ArrayList<>(postPhotos);
+    sorted.sort(Comparator
+            .comparing(PostPhoto::isPrimary).reversed()
+            .thenComparingInt(PostPhoto::getSortOrder)
+            .thenComparingLong(PostPhoto::getPhotoId));
 
-    long chosenPhotoId = chosen.getPhotoId();
+    Set<Long> seenPhotoIds = new HashSet<>();
+    for (PostPhoto pp : sorted) {
+      if (urls.size() >= maxImages) {
+        break;
+      }
+      long photoId = pp.getPhotoId();
+      if (!seenPhotoIds.add(photoId)) {
+        continue;  // skip duplicate
+      }
 
-    boolean existsInProductPhotos = productPhotos.stream()
-            .anyMatch(p -> p.getPhotoId() == chosenPhotoId);
+      String url = imageBaseUrl.endsWith("/")
+              ? imageBaseUrl + photoId
+              : imageBaseUrl + "/" + photoId;
 
-    if (!existsInProductPhotos) {
-      // We still can form the URL from photoId, even if not in the loaded productPhotos list,
-      // as long as the endpoint is based on photoId.
-      LOG.warn("PostPhoto references photoId={} that is not in loaded productPhotos", chosenPhotoId);
+      urls.add(url);
     }
 
-    String url = imageBaseUrl.endsWith("/")
-            ? imageBaseUrl + chosenPhotoId
-            : imageBaseUrl + "/" + chosenPhotoId;
+    return urls;
+  }
 
-    return Optional.of(url);
+  /*
+   * Upload a photo as UNPUBLISHED to Facebook and return its media_fbid.
+   */
+  private String uploadUnpublishedPhoto(String imageUrl) {
+    String endpoint = graphApiBaseUrl + "/" + pageId + "/photos";
+
+    MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+    body.add("access_token", accessToken);
+    body.add("url", imageUrl);
+    body.add("published", "false");
+
+    LOG.info("Uploading unpublished photo to Facebook: pageId={} imageUrl={}", pageId, imageUrl);
+
+    FacebookPostResponse response
+            = restTemplate.postForObject(endpoint, body, FacebookPostResponse.class);
+
+    if (response == null || response.getId() == null) {
+      String msg = "Unpublished photo upload returned null or no id for url=" + imageUrl;
+      LOG.warn(msg);
+      throw new IllegalStateException(msg);
+    }
+
+    LOG.info("Unpublished photo uploaded with media_fbid={}", response.getId());
+    return response.getId();
   }
 
   private PublicationResult publishPhotoPost(String caption, String imageUrl) {
@@ -170,6 +209,79 @@ public class FacebookPublisher implements SocialPublisher {
       String msg = "Facebook feed post returned null or no id";
       LOG.warn(msg);
       return PublicationResult.failure(msg);
+    }
+  }
+
+  /*
+ * Publish a multi-photo feed post using attached_media.
+ *
+ * Flow:
+ *  1) For each image URL, upload as unpublished photo -> get media_fbid.
+ *  2) POST /{page-id}/feed with:
+ *       message = caption
+ *       attached_media[0] = {"media_fbid":"<ID0>"}
+ *       attached_media[1] = {"media_fbid":"<ID1>"}
+ *       ...
+   */
+  private PublicationResult publishMultiPhotoPost(String caption, List<String> imageUrls) {
+
+    if (imageUrls == null || imageUrls.isEmpty()) {
+      return publishFeedPost(caption);
+    }
+
+    // 1) Upload each image as unpublished and collect media_fbid ids
+    List<String> mediaFbids = new ArrayList<>();
+    for (String url : imageUrls) {
+      String mediaFbid = uploadUnpublishedPhoto(url);
+      mediaFbids.add(mediaFbid);
+    }
+
+    // 2) Build /feed request with attached_media
+    String endpoint = graphApiBaseUrl + "/" + pageId + "/feed";
+
+    MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+    body.add("access_token", accessToken);
+    body.add("message", caption);
+
+    for (int i = 0; i < mediaFbids.size(); i++) {
+      String fbid = mediaFbids.get(i);
+      // Each entry is a small JSON object telling FB which media_fbid to attach.
+      String attachedMediaJson = "{\"media_fbid\":\"" + fbid + "\"}";
+      body.add("attached_media[" + i + "]", attachedMediaJson);
+    }
+
+    LOG.info("Publishing multi-photo feed post to pageId={} with {} images",
+            pageId, mediaFbids.size());
+
+    FacebookPostResponse response
+            = restTemplate.postForObject(endpoint, body, FacebookPostResponse.class);
+
+    if (response != null && response.getId() != null) {
+      LOG.info("Facebook multi-photo feed post created with id={}", response.getId());
+      return PublicationResult.success(response.getId());
+    } else {
+      String msg = "Facebook multi-photo feed post returned null or no id";
+      LOG.warn(msg);
+      return PublicationResult.failure(msg);
+    }
+  }
+  
+  /**
+   * 
+   * @param platformPostId
+   * @return 
+   */
+  @Override
+  public boolean deletePost(String platformPostId) {
+    String endpoint = graphApiBaseUrl + "/" + platformPostId;
+    try {
+      LOG.info("Deleting Facebook post id={} from pageId={}", platformPostId, pageId);
+      // restTemplate.delete throws on non-2xx
+      restTemplate.delete(endpoint + "?access_token=" + accessToken);
+      return true;
+    } catch (RestClientException ex) {
+      LOG.error("Failed to delete Facebook post id={} for pageId={}", platformPostId, pageId, ex);
+      return false;
     }
   }
 

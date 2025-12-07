@@ -1,0 +1,7 @@
+ProductsSourceIT.class
+BaseIT.class
+used_furniture\restapi\posts\web\PostFromProductApiIT.class
+used_furniture\restapi\posts\web\PostFromProductAndPublishApiIT.class
+used_furniture\restapi\posts\web\PostFromProductAndPublishFacebookApiIT.class
+AnalyticsIT.class
+used_furniture\restapi\ai_product_description\AiProductDescriptionApiIT.class

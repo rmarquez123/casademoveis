@@ -25,4 +25,7 @@ public interface SocialPublisher {
                             List<PostPhoto> postPhotos,
                             List<Photo> productPhotos,
                             String caption);
+  
+  
+  boolean deletePost(String platformPostId); 
 }

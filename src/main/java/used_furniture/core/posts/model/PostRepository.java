@@ -1,5 +1,6 @@
 package used_furniture.core.posts.repository;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import used_furniture.core.posts.model.Post;
@@ -28,4 +29,9 @@ public interface PostRepository {
    * Update an existing Post. Implementations may throw if postId is missing.
    */
   void update(Post post);
+
+  Optional<Post> findActiveByProductId(int productId);
+
+  void deactivate(long postId);
+
 }

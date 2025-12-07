@@ -167,8 +167,10 @@ public class ProductsSource {
         List<Photo> originalPhotos = originalPhotosMap.getOrDefault(productId, Collections.emptyList());
 
         // For each original photo, create/store the resized version
+        PhotoResizer resizer = new PhotoResizer(); 
+        
         for (Photo origPhoto : originalPhotos) {
-          byte[] resizedBytes = resizePhoto(origPhoto.bytes, width, height);
+          byte[] resizedBytes = resizer.resizePhoto(origPhoto.bytes, width, height);
 
           // Persist the new resized image to the database.
           // This function should be implemented to insert a new record
@@ -186,17 +188,6 @@ public class ProductsSource {
     }
 
     return result;
-  }
-
-  /**
-   * Example helper (placeholder) for resizing a photo to the specified
-   * width/height. In a real implementation, you might use a library like
-   * java.awt.Image or something similar.
-   */
-  private byte[] resizePhoto(byte[] originalBytes, Integer width, Integer height) {
-    // Resize logic goes here (e.g., using a Java image-processing library).
-    // For now, assume it returns the new image as a byte[].
-    return originalBytes;  // placeholder
   }
 
   /**

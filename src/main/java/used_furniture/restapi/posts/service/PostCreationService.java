@@ -10,7 +10,9 @@ import used_furniture.core.products.repository.ProductRepository;
 import used_furniture.core.products.repository.PhotoRepository;
 
 import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public class PostCreationService {
 
@@ -20,9 +22,9 @@ public class PostCreationService {
   private final PhotoRepository photoRepo;
 
   public PostCreationService(PostRepository postRepo,
-                             PostPhotoRepository postPhotoRepo,
-                             ProductRepository productRepo,
-                             PhotoRepository photoRepo) {
+          PostPhotoRepository postPhotoRepo,
+          ProductRepository productRepo,
+          PhotoRepository photoRepo) {
     this.postRepo = postRepo;
     this.postPhotoRepo = postPhotoRepo;
     this.productRepo = productRepo;
@@ -36,39 +38,99 @@ public class PostCreationService {
    */
   public Post ensurePostForProduct(int productId) {
 
-    List<Post> existingPosts = postRepo.findByProductId(productId);
-    if (!existingPosts.isEmpty()) {
-      return existingPosts.get(0); // take the most recently created
+    // 1) Load product + photos
+    Product product = productRepo.findById(productId)
+            .orElseThrow(() -> new IllegalArgumentException(
+            "Product not found productId=" + productId));
+
+    List<Photo> photos = photoRepo.findByProductId(productId);
+
+    // 2) Derive title/caption/etc (same as before)
+    String title = buildTitle(product);
+    String caption = buildCaption(product, photos);
+    String languageCode = "pt-BR";   // or derive
+    ZonedDateTime desiredPublishTime = computeDesiredPublishTime(product);
+
+    // 3) Check if there is already an ACTIVE post for this product
+    Optional<Post> existingOpt = postRepo.findActiveByProductId(productId);
+
+    Post post;
+
+    if (existingOpt.isPresent()) {
+      // UPDATE path: keep the same postId, refresh metadata + photos
+      Post existing = existingOpt.get();
+      post = existing.withUpdatedMetadata(
+              title,
+              caption,
+              languageCode,
+              desiredPublishTime,
+              true, // keep active
+              existing.getNotes() // or null/whatever you want
+      );
+
+      postRepo.update(post);
+
+      // Clear old post_photo rows and re-insert
+      postPhotoRepo.deleteByPostId(post.getPostId());
+      createPostPhotos(post, photos);
+
+    } else {
+      // INSERT path: create new canonical post for this product
+      Post newPost = new Post(
+              productId,
+              title,
+              caption,
+              languageCode,
+              ZonedDateTime.now().toOffsetDateTime(), // createdAt
+              desiredPublishTime.toOffsetDateTime(),
+              true, // is_active
+              null // notes
+      );
+
+      post = postRepo.insert(newPost);
+      createPostPhotos(post, photos);
     }
 
-    Product product = productRepo.findById(productId)
-        .orElseThrow(() -> new IllegalArgumentException("Product not found: " + productId));
+    return post;
+  }
 
-    Post newPost = new Post(
-        product.getProductId(),
-        product.getName(),   // default title from product
-        null,                // caption built later by builder
-        "pt-BR",             // default language
-        OffsetDateTime.now(),// default desired publish time
-        true,                // active
-        null                 // no notes
-    );
+  private void createPostPhotos(Post post, List<Photo> photos) {
+    if (photos == null || photos.isEmpty()) {
+      return;
+    }
 
-    // Insert canonical post
-    newPost = postRepo.insert(newPost);
-
-    // Attach product photos
-    List<Photo> productPhotos = photoRepo.findByProductId(productId);
+    boolean first = true;
     int sortOrder = 0;
-    for (Photo photo : productPhotos) {
+
+    for (Photo photo : photos) {
+      boolean isPrimary = first;
+      first = false;
+
       PostPhoto pp = new PostPhoto(
-          newPost.getPostId(),
-          photo.getPhotoId(),
-          sortOrder++,
-          sortOrder == 0 // primary if first
+              post.getPostId(),
+              photo.getPhotoId(),
+              sortOrder++,
+              isPrimary
       );
       postPhotoRepo.insert(pp);
     }
-    return newPost;
   }
+
+  private ZonedDateTime computeDesiredPublishTime(Product product) {
+    return ZonedDateTime.now();
+  }
+
+  private String buildCaption(Product product, List<Photo> photos) {
+    return null;
+  }
+  
+  /**
+   * 
+   * @param product
+   * @return 
+   */
+  private String buildTitle(Product product) {
+    return product.name;
+  }
+
 }

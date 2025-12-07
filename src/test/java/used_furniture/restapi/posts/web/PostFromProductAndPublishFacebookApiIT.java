@@ -6,14 +6,15 @@ import com.zaxxer.hikari.HikariConfig;
 import common.db.ConnectionPool;
 import common.db.DbConnection;
 import common.db.HikariConnectionPool;
+import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import static org.junit.Assume.assumeTrue;
 
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -32,7 +33,6 @@ import used_furniture.core.posts.repository.PostPublicationRepository;
 import used_furniture.core.posts.repository.PostRepository;
 import used_furniture.core.products.repository.PhotoRepository;
 import used_furniture.core.products.repository.ProductRepository;
-import used_furniture.restapi.posts.client.FacebookPostResponse;
 import used_furniture.restapi.posts.client.FacebookPublisher;
 import used_furniture.restapi.posts.client.SocialPublisher;
 import used_furniture.restapi.posts.repository.PostPhotoRepositoryDbImpl;
@@ -43,9 +43,6 @@ import used_furniture.restapi.posts.service.PostCreationService;
 import used_furniture.restapi.posts.service.PostPublicationService;
 import used_furniture.restapi.products.repository.PhotoRepositoryDbImpl;
 import used_furniture.restapi.products.repository.ProductRepositoryDbImpl;
-
-
-
 
 /**
  * Real end-to-end test that:
@@ -73,22 +70,22 @@ public class PostFromProductAndPublishFacebookApiIT {
   private Properties testProps;
 
   /* Use an existing product that has at least one photo */
-  private int testProductId = 20;
+  private final List<Long> testProductIds = Arrays.asList(
+          1L, 3L, 4L, 9L, 11L, 12L, 13L, 15L, 14L, 7L, 5L, 18L, 17L, 16L, 20L, 19L
+  );
 
   @Before
   public void setUp() throws Exception {
 
     this.testProps = loadTestProps();
-
+    
     /*
      * Skip this test if Facebook config is not present.
      * Similar pattern to your OPENAI integration test.
      */
     String pageId = testProps.getProperty("facebook.page.id");
-//    String accessToken = System.getenv("FACEBOOK_API_KEY");
-    String accessToken = "EAARHJOAiqzkBQKEsPEtlhHazqUEGZA9OikPAqs6D3KSFlvJQ4O1Jn6h9FjSkzsYazvtjvYME53YbHTrdgln0MP8wQ5v7MTI1SQP4VGrtzDyycKwkzjwSNxhrAZBWV0TxGDQdjsqiDapfgrYuZBbird8LdHZBdNy9dMeIW0Lz7RZCnqC5jwAxjNTblcUkRmZBuSTZCZBVoXZBQ7cEgIuzlnKbI67UmpOjBSxiDn6nzLY4A";
-    
-      
+    String accessToken = "EAARHJOAiqzkBQDyJe46EO3hPEBnW0ZCBmOtT2cHG8ZBgdEn9jd6FjKWKikN9HFdoDNjiTU4haIvVluoKmOZCs5YBLIVuJeKr9qr8jgZBHfiNea0MQGbLPCMwLSAZCi2iU3z1fbJWCVpAOGhhZCGCHlRIxFk7FEyP9oKnf6AUF39y6nA5cd3pyJhVmIay38EN1dtiVk9umyUdUSydUx4wRDH4N3pZAmyRFDCck5Bd76oX3bJkGuK4yhIZC0ImxDzkZCFqyfKftJYTduT2WsVbKRWOOhXsX";
+
     /* DB connection */
     this.dbconn = loadTestDbConnection(testProps);
 
@@ -98,7 +95,7 @@ public class PostFromProductAndPublishFacebookApiIT {
     this.postRepo = new PostRepositoryDbImpl(dbconn);
     this.postPhotoRepo = new PostPhotoRepositoryDbImpl(dbconn);
     this.postPublicationRepo = new PostPublicationRepositoryDbImpl(dbconn);
-
+    
     /* Services */
     PostCreationService postCreationService
             = new PostCreationService(postRepo, postPhotoRepo, productRepo, photoRepo);
@@ -145,81 +142,86 @@ public class PostFromProductAndPublishFacebookApiIT {
     ObjectMapper mapper = new ObjectMapper();
 
     /* 1) Ensure Post from Product */
-    String createBody = "{ \"productId\": " + testProductId + " }";
+    for (long testProductId : testProductIds) {
 
-    MvcResult createResult = mockMvc.perform(
-            post("/api/social/post-from-product")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(createBody)
-    )
-            .andExpect(status().isOk())
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-            .andReturn();
+      String createBody = "{ \"productId\": " + testProductId + " }";
 
-    String createResponseJson = createResult.getResponse().getContentAsString();
-    System.out.println("Response from post-from-product: " + createResponseJson);
+      MvcResult createResult = mockMvc.perform(
+              post("/api/social/post-from-product")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(createBody)
+      )
+              .andExpect(status().isOk())
+              .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+              .andReturn();
 
-    JsonNode postNode = mapper.readTree(createResponseJson);
-    long postId = postNode.get("postId").asLong();
-    int productIdReturned = postNode.get("productId").asInt();
-    assertEquals(testProductId, productIdReturned);
+      String createResponseJson = createResult.getResponse().getContentAsString();
+      System.out.println("Response from post-from-product: " + createResponseJson);
 
-    /* 2) Schedule FACEBOOK publication */
-    String scheduleJson = "{"
-            + "\"postId\": " + postId + ","
-            + "\"platform\": \"FACEBOOK\","
-            + "\"targetAccount\": \"Casa de Móveis Usados\","
-            + "\"captionOverride\": null,"
-            + "\"scheduledTime\": null"
-            + "}";
+      JsonNode postNode = mapper.readTree(createResponseJson);
+      long postId = postNode.get("postId").asLong();
+      int productIdReturned = postNode.get("productId").asInt();
+      assertEquals(testProductId, productIdReturned);
 
-    MvcResult scheduleResult = mockMvc.perform(
-            post("/api/social/schedule")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(scheduleJson)
-    )
-            .andExpect(status().isOk())
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-            .andReturn();
+      /* 2) Schedule FACEBOOK publication */
+      String scheduleJson = "{"
+              + "\"postId\": " + postId + ","
+              + "\"platform\": \"FACEBOOK\","
+              + "\"targetAccount\": \"Casa de Móveis Usados\","
+              + "\"captionOverride\": null,"
+              + "\"scheduledTime\": null"
+              + "}";
 
-    String scheduleResponseJson = scheduleResult.getResponse().getContentAsString();
-    System.out.println("Response from /api/social/schedule: " + scheduleResponseJson);
+      MvcResult scheduleResult = mockMvc.perform(
+              post("/api/social/schedule")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(scheduleJson)
+      )
+              .andExpect(status().isOk())
+              .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+              .andReturn();
 
-    JsonNode pubNode = mapper.readTree(scheduleResponseJson);
-    long postPublicationId = pubNode.get("postPublicationId").asLong();
-    String initialStatus = pubNode.get("status").asText();
-    assertEquals("PENDING", initialStatus);
+      String scheduleResponseJson = scheduleResult.getResponse().getContentAsString();
+      System.out.println("Response from /api/social/schedule: " + scheduleResponseJson);
 
-    /* 3) Process due publications (real call to Facebook) */
-    mockMvc.perform(
-            post("/api/social/process-due")
-                    .param("limit", "10")
-    )
-            .andExpect(status().isOk())
-            .andExpect(content().string(
-                    org.hamcrest.Matchers.containsString("Processed up to")));
+      JsonNode pubNode = mapper.readTree(scheduleResponseJson);
+      long postPublicationId = pubNode.get("postPublicationId").asLong();
+      String initialStatus = pubNode.get("status").asText();
+      assertEquals("PENDING", initialStatus);
 
-    /* 4) Reload PostPublication and assert PUBLISHED with platformPostId */
-    PostPublication pub = postPublicationRepo
-            .findById(postPublicationId)
-            .orElseThrow(() -> new IllegalStateException("PostPublication not found in DB"));
+      /* 3) Process due publications (real call to Facebook) */
+      mockMvc.perform(
+              post("/api/social/process-due")
+                      .param("limit", "10")
+      )
+              .andExpect(status().isOk())
+              .andExpect(content().string(
+                      org.hamcrest.Matchers.containsString("Processed up to")));
 
-    if (pub.getStatus() == PublicationStatus.FAILED) {
-      String msg = "Facebook publish FAILED. Error message from DB: "
-              + pub.getErrorMessage();
-      System.out.println(msg);
-      org.junit.Assert.fail(msg);
+      /* 4) Reload PostPublication and assert PUBLISHED with platformPostId */
+      PostPublication pub = postPublicationRepo
+              .findById(postPublicationId)
+              .orElseThrow(() -> new IllegalStateException("PostPublication not found in DB"));
+
+      if (pub.getStatus() == PublicationStatus.FAILED) {
+        String msg = "Facebook publish FAILED. Error message from DB: "
+                + pub.getErrorMessage();
+        System.out.println(msg);
+        org.junit.Assert.fail(msg);
+      }
+
+      assertEquals(PublicationStatus.PUBLISHED, pub.getStatus());
+      assertNotNull("Expected platformPostId to be set after real Facebook publish",
+              pub.getPlatformPostId());
+
+      assertNotNull("Expected platformPostId to be set after real Facebook publish",
+              pub.getPlatformPostId());
+
+      System.out.println("Final publication status: " + pub.getStatus()
+              + ", platformPostId=" + pub.getPlatformPostId());
+
     }
 
-    assertEquals(PublicationStatus.PUBLISHED, pub.getStatus());
-    assertNotNull("Expected platformPostId to be set after real Facebook publish",
-            pub.getPlatformPostId());
-
-    assertNotNull("Expected platformPostId to be set after real Facebook publish",
-            pub.getPlatformPostId());
-
-    System.out.println("Final publication status: " + pub.getStatus()
-            + ", platformPostId=" + pub.getPlatformPostId());
   }
 
   // ---------------------------------------------------------------------------

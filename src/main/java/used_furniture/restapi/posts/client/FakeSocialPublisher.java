@@ -44,4 +44,11 @@ public class FakeSocialPublisher implements SocialPublisher {
     String fakeId = platform.name() + "_POST_" + post.getPostId();
     return PublicationResult.success(fakeId);
   }
+
+  @Override
+  public boolean deletePost(String platformPostId) {
+    return true;
+  }
+  
+  
 }

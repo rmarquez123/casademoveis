@@ -1,6 +1,7 @@
 package used_furniture.core.posts.model;
 
 import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 
 /*
  * Canonical social post for a product.
@@ -29,12 +30,12 @@ public class Post {
    * postId is left unset and should be filled after insert.
    */
   public Post(int productId,
-              String title,
-              String caption,
-              String languageCode,
-              OffsetDateTime desiredPublishTime,
-              boolean active,
-              String notes) {
+          String title,
+          String caption,
+          String languageCode,
+          OffsetDateTime desiredPublishTime,
+          boolean active,
+          String notes) {
     this.productId = productId;
     this.title = title;
     this.caption = caption;
@@ -44,8 +45,33 @@ public class Post {
     this.notes = notes;
   }
 
-  /* Getters and setters */
+  public Post(int productId, String title, String caption, String languageCode, 
+          OffsetDateTime createdAt, 
+          OffsetDateTime desiredPublishTime, boolean active, String notes) {
+    this.productId = productId;
+    this.title = title;
+    this.caption = caption;
+    this.languageCode = languageCode;
+    this.createdAt = createdAt;
+    this.desiredPublishTime = desiredPublishTime;
+    this.active = active;
+    this.notes = notes;
+  }
+  public Post(long postId, int productId, String title, String caption, String languageCode, 
+          OffsetDateTime createdAt, 
+          OffsetDateTime desiredPublishTime, boolean active, String notes) {
+    this.postId = postId;
+    this.productId = productId;
+    this.title = title;
+    this.caption = caption;
+    this.languageCode = languageCode;
+    this.createdAt = createdAt;
+    this.desiredPublishTime = desiredPublishTime;
+    this.active = active;
+    this.notes = notes;
+  }
 
+  /* Getters and setters */
   public long getPostId() {
     return postId;
   }
@@ -117,4 +143,15 @@ public class Post {
   public void setNotes(String notes) {
     this.notes = notes;
   }
+
+  public Post withUpdatedMetadata(
+          String title,
+          String caption,
+          String languageCode,
+          ZonedDateTime desiredPublishTime,
+          boolean active,
+          String notes) {
+    return new Post(postId, productId, title, caption, languageCode, this.createdAt, desiredPublishTime.toOffsetDateTime(), active, notes); 
+  }
+
 }

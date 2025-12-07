@@ -18,14 +18,16 @@ public enum PublicationStatus {
    * that don't require further automatic processing.
    */
   public boolean isTerminal() {
-    switch (this) {
-      case PUBLISHED:
-      case FAILED:
-      case CANCELLED:
-      case SKIPPED:
-        return true;
-      default:
-        return false;
-    }
+    return switch (this) {
+      case PUBLISHED, FAILED, CANCELLED, SKIPPED -> true;
+      default -> false;
+    };
+  }
+
+  public boolean isPendingLike() {
+    return switch (this) {
+      case PENDING, QUEUED -> true;
+      default -> false;
+    };
   }
 }

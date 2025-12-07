@@ -47,4 +47,9 @@ public interface PostPublicationRepository {
    * Optionally, a helper to list by status for admin screens.
    */
   List<PostPublication> findByStatus(PublicationStatus status, int limit);
+  
+  
+  List<PostPublication> findByPost(long postId);
+
+
 }

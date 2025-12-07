@@ -2,6 +2,7 @@ package used_furniture.restapi.posts.web;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
@@ -28,9 +29,9 @@ public class PostAdminController {
   private final PostPublicationRepository postPublicationRepository;
 
   public PostAdminController(PostCreationService postCreationService,
-                             PostPublicationService postPublicationService,
-                             PostRepository postRepository,
-                             PostPublicationRepository postPublicationRepository) {
+          PostPublicationService postPublicationService,
+          PostRepository postRepository,
+          PostPublicationRepository postPublicationRepository) {
     this.postCreationService = postCreationService;
     this.postPublicationService = postPublicationService;
     this.postRepository = postRepository;
@@ -52,18 +53,18 @@ public class PostAdminController {
    */
   @PostMapping("/schedule")
   public ResponseEntity<PostPublication> schedulePublication(
-      @RequestBody SchedulePublicationRequest request) {
+          @RequestBody SchedulePublicationRequest request) {
 
     Post post = postRepository.findById(request.getPostId())
-        .orElseThrow(() -> new IllegalArgumentException("Post not found id=" + request.getPostId()));
+            .orElseThrow(() -> new IllegalArgumentException("Post not found id=" + request.getPostId()));
 
     OffsetDateTime scheduledTime = request.getScheduledTime() != null
-        ? request.getScheduledTime()
-        : OffsetDateTime.now();
+            ? request.getScheduledTime()
+            : OffsetDateTime.now();
 
     PostPublication existing = postPublicationRepository
-        .findByPostAndPlatform(post.getPostId(), request.getPlatform())
-        .orElse(null);
+            .findByPostAndPlatform(post.getPostId(), request.getPlatform())
+            .orElse(null);
 
     PostPublication publication;
     if (existing != null) {
@@ -79,12 +80,12 @@ public class PostAdminController {
     } else {
       // Create new
       PostPublication pub = new PostPublication(
-          post.getPostId(),
-          request.getPlatform(),
-          request.getTargetAccount(),
-          request.getCaptionOverride(),
-          PublicationStatus.PENDING,
-          scheduledTime
+              post.getPostId(),
+              request.getPlatform(),
+              request.getTargetAccount(),
+              request.getCaptionOverride(),
+              PublicationStatus.PENDING,
+              scheduledTime
       );
       publication = postPublicationRepository.insert(pub);
     }
@@ -97,7 +98,7 @@ public class PostAdminController {
    */
   @PostMapping("/process-due")
   public ResponseEntity<String> processDuePublications(
-      @RequestParam(name = "limit", defaultValue = "10") int limit) {
+          @RequestParam(name = "limit", defaultValue = "10") int limit) {
 
     postPublicationService.processDuePublications(limit);
     return ResponseEntity.ok("Processed up to " + limit + " due publications");
@@ -108,13 +109,13 @@ public class PostAdminController {
    */
   @GetMapping("/publications")
   public ResponseEntity<List<PublicationStatusResponse>> listPublicationsByStatus(
-      @RequestParam(name = "status", defaultValue = "PENDING") PublicationStatus status,
-      @RequestParam(name = "limit", defaultValue = "20") int limit) {
+          @RequestParam(name = "status", defaultValue = "PENDING") PublicationStatus status,
+          @RequestParam(name = "limit", defaultValue = "20") int limit) {
 
     List<PostPublication> pubs = postPublicationRepository.findByStatus(status, limit);
 
     List<PublicationStatusResponse> response = pubs.stream()
-        .map(p -> new PublicationStatusResponse(
+            .map(p -> new PublicationStatusResponse(
             p.getPostPublicationId(),
             p.getPostId(),
             p.getPlatform(),
@@ -123,9 +124,41 @@ public class PostAdminController {
             p.getPublishedAt(),
             p.getPlatformPostId(),
             p.getErrorMessage()
-        ))
-        .collect(Collectors.toList());
+    ))
+            .collect(Collectors.toList());
 
     return ResponseEntity.ok(response);
   }
+
+  @DeleteMapping("/post/{postId}")
+  public ResponseEntity<Void> deactivatePost(@PathVariable("postId") long postId) {
+
+    Post post = postRepository.findById(postId)
+            .orElseThrow(() -> new IllegalArgumentException("Post not found id=" + postId));
+
+    // 1) Soft delete the post
+    postRepository.deactivate(postId);
+
+    // 2) Cancel pending/queued publications
+    List<PostPublication> pubs = postPublicationRepository.findByPost(postId);
+    for (PostPublication pub : pubs) {
+      if (pub.getStatus().isPendingLike()) { // or check PENDING/QUEUED specifically
+        pub.setStatus(PublicationStatus.CANCELLED);
+        pub.setErrorMessage("Cancelled because post was deactivated");
+        postPublicationRepository.update(pub);
+      }
+    }
+
+    return ResponseEntity.noContent().build();
+  }
+
+  @DeleteMapping("/post-by-product/{productId}")
+  public ResponseEntity<Void> deactivatePostByProduct(@PathVariable("productId") int productId) {
+    Optional<Post> existing = postRepository.findActiveByProductId(productId);
+    if (existing.isEmpty()) {
+      return ResponseEntity.notFound().build();
+    }
+    return deactivatePost(existing.get().getPostId());
+  }
+
 }
