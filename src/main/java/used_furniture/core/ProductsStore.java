@@ -33,11 +33,13 @@ public class ProductsStore {
    */
   public int addProduct(Product product) {
     int product_id = this.conn.getNextSequence("product_id", "products.product");
-    String statement = "insert into products.product \n"
-            + "(product_id, name, description, available, " //
-            + "date_recieved, date_sold, category, "
-            + "length, height, depth, "
-            + "price, site_visible, social_media_visible) \n"
+    String statement = """
+                       insert into products.product 
+                       (product_id, name, description, available, date_recieved, 
+                       date_sold, category, length, height, depth, 
+                       price, site_visible, social_media_visible) 
+                       """ //
+
             + String.format("values (%d, '%s', '%s', %b, %s, %s, %d, %f, %f, %f, %f, %s, %s)\n",
                     product_id, //
                     product.name, //
@@ -57,8 +59,11 @@ public class ProductsStore {
    * @param product
    */
   public void updateProduct(Product product) {
-    String statement = "update products.product \n"
-            + "set (name, description, available, date_recieved, date_sold, category, length, height, depth, price) \n"
+    String statement = """
+                       update products.product 
+                       set (name, description, available, date_recieved, date_sold, 
+                       category, length, height, depth, price, site_visible, social_media_visible) 
+                       """
             + String.format("= ('%s', '%s', %b, %s, %s, %d, %f, %f, %f, %f, %s, %s)\n",
                     product.name, //
                     product.description,// 
