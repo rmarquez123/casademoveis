@@ -29,21 +29,24 @@ public class ProductsStore {
   /**
    *
    * @param product
-   * @return 
+   * @return
    */
   public int addProduct(Product product) {
     int product_id = this.conn.getNextSequence("product_id", "products.product");
     String statement = "insert into products.product \n"
-            + "(product_id, name, description, available, date_recieved, date_sold, category, length, height, depth, price) \n"
-            + String.format("values (%d, '%s', '%s', %b, %s, %s, %d, %f, %f, %f, %f)\n",
+            + "(product_id, name, description, available, " //
+            + "date_recieved, date_sold, category, "
+            + "length, height, depth, "
+            + "price, site_visible, social_media_visible) \n"
+            + String.format("values (%d, '%s', '%s', %b, %s, %s, %d, %f, %f, %f, %f, %s, %s)\n",
                     product_id, //
                     product.name, //
                     product.description,// 
                     product.available,//
                     RmObjects.formatUtcForDbStatement(product.dateReceived),// 
                     product.dateSold == null ? "null" : RmObjects.formatUtcForDbStatement(product.dateSold), //
-                    product.category, product.length, product.height, product.depth, product.price
-                    
+                    product.category, product.length, product.height, product.depth, product.price,
+                    product.siteVisible, product.socialMediaVisible
             );
     this.conn.executeStatement(statement);
     return product_id;
@@ -56,14 +59,15 @@ public class ProductsStore {
   public void updateProduct(Product product) {
     String statement = "update products.product \n"
             + "set (name, description, available, date_recieved, date_sold, category, length, height, depth, price) \n"
-            + String.format("= ('%s', '%s', %b, %s, %s, %d, %f, %f, %f, %f)\n",
+            + String.format("= ('%s', '%s', %b, %s, %s, %d, %f, %f, %f, %f, %s, %s)\n",
                     product.name, //
                     product.description,// 
                     product.available,//
                     RmObjects.formatUtcForDbStatement(product.dateReceived),// 
                     product.dateSold == null ? "null" : RmObjects.formatUtcForDbStatement(product.dateSold), //
                     product.category, //
-                    product.length, product.height, product.depth, product.price
+                    product.length, product.height, product.depth, product.price, //
+                    product.siteVisible, product.socialMediaVisible//
             )
             + String.format("\nwhere product_id = %d", product.product_id);
     this.conn.executeStatement(statement);
@@ -81,23 +85,23 @@ public class ProductsStore {
   /**
    *
    * @param photo
-   * @return 
+   * @return
    */
   public long addPhoto(Photo photo) {
-     
+
     long photoId = this.conn.getNextSequenceLong("photo_id", "products.photo");
     String statement = "insert into products.photo (photo_id, product_id, photo) values \n"
             + "(?, ?, ?)";
     this.conn.executeStatementsBatch(statement, Arrays.asList(photo), kv -> {
-      try {    
-        kv.getKey().setLong(1, photoId);  
+      try {
+        kv.getKey().setLong(1, photoId);
         kv.getKey().setLong(2, kv.getRight().productId);
         kv.getKey().setBytes(3, kv.getRight().bytes);
       } catch (SQLException ex) {
         throw new RuntimeException(ex);
       }
     });
-    return photoId; 
+    return photoId;
   }
 
   /**
