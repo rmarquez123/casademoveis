@@ -45,6 +45,12 @@ public class Product {
 
   @JsonProperty
   public final double price;
+  
+  @JsonProperty
+  public final boolean siteVisible; 
+  
+  @JsonProperty
+  public final boolean socialMediaVisible; 
 
   /**
    *
@@ -60,12 +66,15 @@ public class Product {
    * @param depth
    * @param height
    * @param price
+   * @param siteVisible
+   * @param socialMediaVisible
    */
   public Product(int product_id, String name, String description, //
           boolean available,
           ZonedDateTime dateReceived, ZonedDateTime dateSold, // 
           int category, String categoryName,
-          double length, double depth, double height, double price
+          double length, double depth, double height, double price, 
+          boolean siteVisible, boolean socialMediaVisible
   ) {
     try {
       this.product_id = product_id;
@@ -83,6 +92,8 @@ public class Product {
     } catch (UnsupportedEncodingException ex) {
       throw new RuntimeException(ex);
     }
+    this.siteVisible = siteVisible;
+    this.socialMediaVisible = socialMediaVisible;
   }
 
   @Override
@@ -125,7 +136,12 @@ public class Product {
    * @return
    */
   public Product setProductId(int newProductId) {
-    return new Product(newProductId, name, description, available, dateReceived, dateSold, category, categoryName, length, depth, height, price);
+    Product result = new Product(newProductId, name,  //
+            description, available, dateReceived, dateSold, //
+            category, categoryName, //
+            length, depth, height, price,// 
+            siteVisible, socialMediaVisible);
+    return result;
   }
 
   public int getProductId() {

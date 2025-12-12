@@ -55,7 +55,14 @@ public class ProductsSource {
       double height = RmDbUtils.doubleValue(rs, "height");
       double depth = RmDbUtils.doubleValue(rs, "depth");
       double price = RmDbUtils.doubleValue(rs, "price");
-      return new Product(productId, name, description, available, dateReceived, dateSold, category, categoryName, length, depth, height, price);
+      boolean siteVisible = RmDbUtils.booleanValue(rs, "site_visible"); 
+      boolean socialMediaVisible = RmDbUtils.booleanValue(rs, "social_media_visible"); 
+      return new Product(productId, name, description, available, 
+              dateReceived, dateSold, 
+              category, categoryName, 
+              length, depth, height, price, 
+              siteVisible, socialMediaVisible
+      );
     });
     return result;
   }

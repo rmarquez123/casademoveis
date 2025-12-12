@@ -83,7 +83,10 @@ public class ProductRepositoryDbImpl implements ProductRepository {
     double depth = rs.getDouble("depth");
     double height = rs.getDouble("height");
     double price = rs.getDouble("price");
-
+    
+    boolean siteVisible = rs.getBoolean("site_visible");
+    boolean socialMediaVisible = rs.getBoolean("social_media_visible");
+    
     // Product constructor already handles encoding conversion for name/description.
     return new Product(
         productId,
@@ -97,7 +100,7 @@ public class ProductRepositoryDbImpl implements ProductRepository {
         length,
         depth,
         height,
-        price
+        price, siteVisible, socialMediaVisible
     );
   }
 }

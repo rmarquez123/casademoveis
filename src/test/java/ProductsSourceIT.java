@@ -30,7 +30,9 @@ public class ProductsSourceIT extends BaseIT {
     ZonedDateTime dateReceived = ZonedDateTime.now();
     ZonedDateTime dateSold = null;
     int category = 0;
-    Product product = new Product(-1, name, description, true, dateReceived, dateSold, category, null, 0, 0, 0, 0);
+    Product product = new Product( //
+            -1, name, description, true, //
+            dateReceived, dateSold, category, null, 0, 0, 0, 0, false, false);
     int newProductId = instance.addProduct(product);
     product = product.setProductId(newProductId);
     instance.updateProduct(product);

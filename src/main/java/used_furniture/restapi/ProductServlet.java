@@ -88,6 +88,8 @@ public class ProductServlet {
    * @param depth
    * @param height
    * @param price
+   * @param siteVisible
+   * @param socialMediaVisible
    * @return
    */
   @RequestMapping(path = "/products/add", method = RequestMethod.POST)
@@ -100,11 +102,15 @@ public class ProductServlet {
           @RequestParam("length") Double length,
           @RequestParam("depth") Double depth,
           @RequestParam("height") Double height,
-          @RequestParam("price") Double price
+          @RequestParam("price") Double price, 
+          @RequestParam("siteVisible") Boolean siteVisible, 
+          @RequestParam("socialMediaVisible") Boolean socialMediaVisible 
   ) {
     ZonedDateTime dateReceived = ZonedDateTime.now();
     Product product = new Product(-1, name, description, available, // 
-            dateReceived, null, category, null, length, depth, height, price);
+            dateReceived, null, category, null, length, depth, height, price, 
+            siteVisible, socialMediaVisible);
+    
     int productId = this.store.addProduct(product);
     return productId;
   }
@@ -122,6 +128,8 @@ public class ProductServlet {
    * @param depth
    * @param height
    * @param price
+   * @param siteVisible
+   * @param socialMediaVisible
    */
   @RequestMapping(path = "/products/edit", method = RequestMethod.POST)
   @ResponseBody
@@ -138,14 +146,18 @@ public class ProductServlet {
           @RequestParam("length") Double length,
           @RequestParam("depth") Double depth,
           @RequestParam("height") Double height,
-          @RequestParam("price") Double price
+          @RequestParam("price") Double price, 
+          @RequestParam("siteVisible") Boolean siteVisible, 
+          @RequestParam("socialMediaVisible") Boolean socialMediaVisible 
   ) {
 
     Product product = new Product(
             productId, name, description,
             available, dateReceived, dateSold,
             category, null,
-            length, depth, height, price);
+            length, depth, height, price, 
+            siteVisible, socialMediaVisible
+    );
     this.store.updateProduct(product);
   }
 
