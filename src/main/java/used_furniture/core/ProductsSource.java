@@ -33,9 +33,10 @@ public class ProductsSource {
 
   /**
    *
+   * @param siteVisibleOnly
    * @return
    */
-  public List<Product> getProducts() {
+  public List<Product> getProducts(boolean siteVisibleOnly) {
     String query = "select \n"
             + "p.*, c.name as category_name \n"
             + "from products.product p\n"

@@ -17,10 +17,11 @@ public class ProductsSourceIT extends BaseIT {
   public void test_read_products() {
     DbConnection conn = this.getDbConnection();
     ProductsSource source = new ProductsSource(conn);
-    List<Product> products = source.getProducts();
+    List<Product> products = source.getProducts(false);
     products.stream().forEach(System.out::println);
   }
-
+  
+  
   @Test
   public void test_add_then_updateproduct() {
     DbConnection conn = this.getDbConnection();

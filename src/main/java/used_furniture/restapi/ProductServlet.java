@@ -55,25 +55,32 @@ public class ProductServlet {
 
   /**
    *
+   * @param siteVisibleOnly
    * @return
    */
   @RequestMapping(path = "/products", method = RequestMethod.GET)
   @ResponseBody
-  public List<Product> products() {
-    List<Product> products = this.source.getProducts();
+  public List<Product> products(
+          @RequestParam(name="siteVisibleOnly", defaultValue = "false") boolean siteVisibleOnly) {
+    
+    
+    List<Product> products = this.source.getProducts(siteVisibleOnly);
     return products;
   }
 
   /**
    *
    * @param category
+   * @param siteVisibleOnly
    * @return
    */
   @RequestMapping(path = "/products/byCategory", method = RequestMethod.GET)
   @ResponseBody
   public List<Product> productsByCategory(
-          @RequestParam("category") Integer category) {
-    List<Product> products = this.source.getProducts();
+          @RequestParam("category") Integer category,
+          @RequestParam(name="siteVisibleOnly", defaultValue = "false") boolean siteVisibleOnly
+  ) {
+    List<Product> products = this.source.getProducts(siteVisibleOnly);
     products.removeIf(p -> !Objects.equals(p.category, category));
     return products;
   }
