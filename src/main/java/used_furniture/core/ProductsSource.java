@@ -37,11 +37,15 @@ public class ProductsSource {
    * @return
    */
   public List<Product> getProducts(boolean siteVisibleOnly) {
+    String a =siteVisibleOnly ? "where site_visible = true":"";
+    
     String query = "select \n"
             + "p.*, c.name as category_name \n"
             + "from products.product p\n"
             + "join products.category c\n"
-            + "on c.category_id = p.category\n";
+            + "on c.category_id = p.category\n"
+            + a 
+            ;
     ZoneId zoneId = ZoneId.of("UTC");
     List<Product> result = this.conn.executeQuery(query, rs -> {
       int productId = RmDbUtils.intValue(rs, "product_id");
